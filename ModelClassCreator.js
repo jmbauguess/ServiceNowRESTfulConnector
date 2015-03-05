@@ -8,8 +8,7 @@ ModelClassCreator.prototype = {
 	 * initialize - Initializes values for the running of the script
 	 * @param  {string} tableType          A table type (Task, CMDB) - Basically, any table that is extended
 	 */
-	initialize: function(tableType) {
-		
+	initialize: function(tableType) {		
 		this.tableType = tableType;
 	},
 	/**
@@ -33,6 +32,19 @@ ModelClassCreator.prototype = {
 				newClassTable.u_class_body = (this.getTableVariables(gr.name));
 				newClassTable.insert();
 			}
+			var collectionTable = new GlideRecord('u_model_class_generator');
+			collectionTable.addQuery('u_tablename', gr.name + 'Collection');
+			collectionTable.query();
+			if (collectionTable.next()) {
+				collectionTable.u_class_body = this.generateCollectionClass(gr.name);
+				collectionTable.update();
+			} else {
+				var newCollectionTable = new GlideRecord('u_model_class_generator');
+				newCollectionTable.initialize();
+				newCollectionTable.u_tablename = gr.name + 'Collection';
+				newCollectionTable.u_class_body = this.generateCollectionClass(gr.name);
+				newCollectionTable.insert();
+			}
 		}
 	},
 	/**
@@ -46,7 +58,7 @@ ModelClassCreator.prototype = {
 		gr.query();
 		var data = this.getJavaVariables(gr, tableName);		
 		return this.generateClass(data, tableName);
-	},
+	},	
 	/**
 	 * generateClass - Generates a class in the appropriate language
 	 * @param  {string} data      A list of variables in a particular programming language
@@ -66,12 +78,46 @@ ModelClassCreator.prototype = {
 		return classToMake;
 	},
 	/**
+	 * generateCollectionClass Generates a Collection class for handling the data
+	 * @param  {string} tablename The table name of the class
+	 * @return {string}           Data to insert into the table
+	 */
+	generateCollectionClass: function(tablename) {
+		var classToMake = 'package com.mycompany.servicenow.connector.model;\n\n' +
+						  'import com.google.gson.annotations.SerializedName;\n' +
+						  'import java.util.List;\n\n';
+		tablename = this.capitalizeFirstLetter(tablename);
+		tablename = this.replaceUnderscoresWithCamelCase(tablename);
+		classToMake += 'public class ' + tablename + "Collection {\n\n" + this.collectionClassBody(tablename) + "\n}\n\n";
+		return classToMake;
+	},
+	/**
+	 * collectionClassBody Generates the body of the collection class
+	 * @param  {string} tablename The table name of the class
+	 * @return {string}           Data to insert into the table
+	 */
+	collectionClassBody: function(tablename) {
+		var data = '@SerializedName("records")\n';
+		data += 'private List<' + tablename + '> ' + this.lowerCaseFirstLetter(tablename) + 's;\n\n';
+		data += 'public List<' + tablename + '> get' + this.lowerCaseFirstLetter(tablename) + 's() {\n';
+		data += 'return ' + this.lowerCaseFirstLetter(tablename) + 's;\n}\n\n';
+		return data;
+	},
+	/**
 	 * capitalizeFirstLetter - Capitalizes the first letter of a word
 	 * @param  {string} word The word to capitalize
 	 * @return {string}      A word with the first word capitalized
 	 */
 	capitalizeFirstLetter: function (word){
 		return word.charAt(0).toUpperCase() + word.slice(1);
+	},
+	/**
+	 * lowerCaseFirstLetter - Makes the first letter of a word lowercase
+	 * @param  {string} word The word to make lowercase on first character
+	 * @return {string}      The word with the first letter capitalized
+	 */
+	lowerCaseFirstLetter: function (word){
+		return word.charAt(0).toLowerCase() + word.slice(1);
 	},
 	/**
 	 * replaceUnderscoresWithCamelCase - Takes a word and makes it camelCase
