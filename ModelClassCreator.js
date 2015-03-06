@@ -1,24 +1,24 @@
 /**
  * ModelClassCreator - Creates Model Classes for RESTful services
- * @type {Class}
+ * @type {Class} 
  */
 var ModelClassCreator = Class.create();
 ModelClassCreator.prototype = {
 	/**
-	 * initialize - Initializes values for the running of the script
-	 * @param  {string} tableType          A table type (Task, CMDB) - Basically, any table that is extended
-	 */
-	initialize: function(tableType) {		
+ 	* initialize - Initializes values for the running of the script
+ 	* @param  {string} tableType          A table type (Task, CMDB) - Basically, any table that is extended
+ 	*/
+	initialize: function(tableType) {
 		this.tableType = tableType;
 	},
 	/**
-	 * getTaskTables Entry point for the class; creates records in the Class Generator Model table (or updates them)
-	 */
-	getTaskTables: function(){
+ 	* getTaskTables Entry point for the class; creates records in the Class Generator Model table (or updates them)
+ 	*/
+	getTaskTables: function() {
 		var gr = new GlideRecord('sys_db_object');
 		gr.addEncodedQuery('super_class.name=' + this.tableType + '^ORname=' + this.tableType);
 		gr.query();
-		while(gr.next()){			
+		while(gr.next()){
 			var classTable = new GlideRecord('u_model_class_generator');
 			classTable.addQuery('u_tablename', gr.name);
 			classTable.query();
@@ -48,54 +48,56 @@ ModelClassCreator.prototype = {
 		}
 	},
 	/**
-	 * getTableVariables - Starts a dictionary table query based on the table and its parent
-	 * @param  {string} tableName The table to query for
-	 * @return {string}           Data to insert into the table
-	 */
+ 	* getTableVariables - Starts a dictionary table query based on the table and its parent
+ 	* @param  {string} tableName The table to query for
+ 	* @return {string}           Data to insert into the table
+ 	*/
 	getTableVariables: function (tableName){
 		var gr = new GlideRecord('sys_dictionary');
 		gr.addEncodedQuery('name=' + tableName + '^internal_type!=collection');
 		gr.query();
-		var data = this.getJavaVariables(gr, tableName);		
+		var data = this.getJavaVariables(gr, tableName);
 		return this.generateClass(data, tableName);
-	},	
+	},
 	/**
-	 * generateClass - Generates a class in the appropriate language
-	 * @param  {string} data      A list of variables in a particular programming language
-	 * @param  {string} tablename The table name of the class
-	 * @return {string}           Data to insert into the table
-	 */
+ 	* generateClass - Generates a class in the appropriate language
+ 	* @param  {string} data      A list of variables in a particular programming language
+ 	* @param  {string} tablename The table name of the class
+ 	* @return {string}           Data to insert into the table
+ 	*/
 	generateClass: function (data, tablename){
 		var classToMake = 'package com.mycompany.servicenow.connector.model;\n\n' +
-						  'import com.google.gson.annotations.SerializedName;\n\n';
+		'import com.google.gson.annotations.SerializedName;\nimport java.util.Date;\n\n';
 		tablename = this.capitalizeFirstLetter(tablename);
 		tablename = this.replaceUnderscoresWithCamelCase(tablename);
 		if (tablename != 'Task' && this.tableType == 'task') {
-			classToMake += 'public class ' + tablename + " extends Task {\n\n" + data + "\n}\n\n";		
+			classToMake += 'public class ' + tablename + " extends Task {\n\n" + data + "\n}\n\n";
+		} else if (tablename != 'CmdbCi' && this.tableType == 'cmdb_ci') {
+			classToMake += 'public class ' + tablename + " extends CmdbCi {\n\n" + data + "\n}\n\n";
 		} else {
-			classToMake += 'public class ' + tablename + " {\n\n" + data + "\n}\n\n";		
+			classToMake += 'public class ' + tablename + " {\n\n" + data + "\n}\n\n";
 		}
 		return classToMake;
 	},
 	/**
-	 * generateCollectionClass Generates a Collection class for handling the data
-	 * @param  {string} tablename The table name of the class
-	 * @return {string}           Data to insert into the table
-	 */
+ 	* generateCollectionClass Generates a Collection class for handling the data
+ 	* @param  {string} tablename The table name of the class
+ 	* @return {string}           Data to insert into the table
+ 	*/
 	generateCollectionClass: function(tablename) {
 		var classToMake = 'package com.mycompany.servicenow.connector.model;\n\n' +
-						  'import com.google.gson.annotations.SerializedName;\n' +
-						  'import java.util.List;\n\n';
+		'import com.google.gson.annotations.SerializedName;\n' +
+		'import java.util.List;\n\n';
 		tablename = this.capitalizeFirstLetter(tablename);
 		tablename = this.replaceUnderscoresWithCamelCase(tablename);
 		classToMake += 'public class ' + tablename + "Collection {\n\n" + this.collectionClassBody(tablename) + "\n}\n\n";
 		return classToMake;
 	},
 	/**
-	 * collectionClassBody Generates the body of the collection class
-	 * @param  {string} tablename The table name of the class
-	 * @return {string}           Data to insert into the table
-	 */
+ 	* collectionClassBody Generates the body of the collection class
+ 	* @param  {string} tablename The table name of the class
+ 	* @return {string}           Data to insert into the table
+ 	*/
 	collectionClassBody: function(tablename) {
 		var data = '@SerializedName("records")\n';
 		data += 'private List<' + tablename + '> ' + this.lowerCaseFirstLetter(tablename) + 's;\n\n';
@@ -104,26 +106,26 @@ ModelClassCreator.prototype = {
 		return data;
 	},
 	/**
-	 * capitalizeFirstLetter - Capitalizes the first letter of a word
-	 * @param  {string} word The word to capitalize
-	 * @return {string}      A word with the first word capitalized
-	 */
+ 	* capitalizeFirstLetter - Capitalizes the first letter of a word
+ 	* @param  {string} word The word to capitalize
+ 	* @return {string}      A word with the first word capitalized
+ 	*/
 	capitalizeFirstLetter: function (word){
 		return word.charAt(0).toUpperCase() + word.slice(1);
 	},
 	/**
-	 * lowerCaseFirstLetter - Makes the first letter of a word lowercase
-	 * @param  {string} word The word to make lowercase on first character
-	 * @return {string}      The word with the first letter capitalized
-	 */
+ 	* lowerCaseFirstLetter - Makes the first letter of a word lowercase
+ 	* @param  {string} word The word to make lowercase on first character
+ 	* @return {string}      The word with the first letter capitalized
+ 	*/
 	lowerCaseFirstLetter: function (word){
 		return word.charAt(0).toLowerCase() + word.slice(1);
 	},
 	/**
-	 * replaceUnderscoresWithCamelCase - Takes a word and makes it camelCase
-	 * @param  {string} item The string to make camelCase
-	 * @return {string}      A camelCase version of the passed string
-	 */
+ 	* replaceUnderscoresWithCamelCase - Takes a word and makes it camelCase
+ 	* @param  {string} item The string to make camelCase
+ 	* @return {string}      A camelCase version of the passed string
+ 	*/
 	replaceUnderscoresWithCamelCase: function (item){
 		if (item.indexOf("_") > -1) {
 			var strings = item.split("_");
@@ -135,11 +137,11 @@ ModelClassCreator.prototype = {
 		return item;
 	},
 	/**
-	 * getJavaVariables - Creates variables based on the Java programming language
-	 * @param  {GlideRecord} gr   Record containing dictionary entries
-	 * @param  {string} tableName The tablename
-	 * @return {string}           A list of variables
-	 */
+ 	* getJavaVariables - Creates variables based on the Java programming language
+ 	* @param  {GlideRecord} gr   Record containing dictionary entries
+ 	* @param  {string} tableName The tablename
+ 	* @return {string}           A list of variables
+ 	*/
 	getJavaVariables: function (gr, tableName){
 		var data = '';
 		while (gr.next()){
@@ -159,8 +161,8 @@ ModelClassCreator.prototype = {
 				data += ("private double " + element + ";\n\n");
 			} else if (elementType == "integer") {
 				data += ("private int " + element + ";\n\n")
-			} else if (gr.element == 'sys_id' && tableName != this.tableType) {				
-				//Skip duplicating the sys_id, which is at the task/parent level!				
+			} else if (gr.element == 'sys_id' && tableName != this.tableType) {
+				//Skip duplicating the sys_id, which is at the task/parent level!
 			} else if (element == 'sys_id' && tableName == 'task') {
 				data += ("private String " + element + ";\n\n");
 			} else {
@@ -172,9 +174,10 @@ ModelClassCreator.prototype = {
 		while (gr.next()) {
 			var element = gr.element;
 			element = this.replaceUnderscoresWithCamelCase(element);
+			var elementType = this.getParentElementType(gr.internal_type);
 			var elementName = this.capitalizeFirstLetter(element);
 			if (elementType == "boolean"){
-				data += ("public boolean get" + elementName + "() {\nreturn this." + element + ";\n}\n\n");				
+				data += ("public boolean get" + elementName + "() {\nreturn this." + element + ";\n}\n\n");
 			} else if (elementType == "date" || elementType == "datetime" || elementType == "time"){
 				data += ("public Date get" + elementName + "() {\nreturn this." + element + ";\n}\n\n");
 			} else if (elementType == "decimal" || elementType == "float") {
@@ -188,19 +191,33 @@ ModelClassCreator.prototype = {
 			} else {
 				data += ("public String get" + elementName + "() {\nreturn this." + element + ";\n}\n\n");
 			}
-			if (gr.element != 'sys_id' && tableName != this.tableType) {				
-				data += ("public void set" + elementName + "(value) {\nthis." + element + " = value;\n}\n\n");
+			var dataType = this.getFormalDataType(elementType);
+			if (gr.element != 'sys_id' && tableName != this.tableType) {
+				data += ("public void set" + elementName + "(" + dataType + " value) {\nthis." + element + " = value;\n}\n\n");
 			} else {
-				data += ("public void set" + elementName + "(value) {\nthis." + element + " = value;\n}\n\n");
+				data += ("public void set" + elementName + "(" + dataType + " value) {\nthis." + element + " = value;\n}\n\n");
 			}
 		}
 		return data;
 	},
+	getFormalDataType: function(elementType){
+		if (elementType == "boolean"){
+			return 'boolean';
+		} else if (elementType == "date" || elementType == "datetime" || elementType == "time"){
+			return 'Date';
+		} else if (elementType == "decimal" || elementType == "float") {
+			return 'double';
+		} else if (elementType == "integer") {
+			return 'int';
+		} else {
+			return 'String';
+		}
+	},
 	/**
-	 * getParentElementType Finds out what type of element we are dealing with
-	 * @param  {String} elementName the type of element
-	 * @return {String}             what the scalar_type of the element (ie: base type) is
-	 */
+ 	* getParentElementType Finds out what type of element we are dealing with
+ 	* @param  {String} elementName the type of element
+ 	* @return {String}             what the scalar_type of the element (ie: base type) is
+ 	*/
 	getParentElementType: function(elementName) {
 		var obj = new GlideRecord('sys_glide_object');
 		if (obj.get('name', elementName)) {
