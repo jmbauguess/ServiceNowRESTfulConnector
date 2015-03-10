@@ -67,16 +67,8 @@ public class IncidentService extends BasicService {
         HttpPost post = buildHttpPost(buildPutUrl(number));        
         Gson gson = new GsonBuilder().serializeNulls().create();
         StringEntity entity = new StringEntity(gson.toJson(incident));        
-        post.setEntity(entity);
-        
-        HttpResponse response = httpClient.execute(post); 
-        String responseBody = response.getEntity().toString();
-        InputStream is = response.getEntity().getContent();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            System.out.println(line);
-        }
+        post.setEntity(entity);        
+        httpClient.execute(post);         
         return new Incident();
     }
     
