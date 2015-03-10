@@ -9,7 +9,10 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
@@ -47,6 +50,13 @@ public class BasicService {
         HttpGet httpGet = new HttpGet(url);
         httpGet.addHeader(BasicScheme.authenticate(credentials, "UTF-8", false));
         return httpGet;
+    }
+    
+    protected HttpPost buildHttpPost(String url){
+        UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(getUsername(), getPassword());
+        HttpPost httpPost = new HttpPost(url);
+        httpPost.addHeader(BasicScheme.authenticate(credentials, "UTF-8", false));
+        return httpPost;
     }
 
     protected ResponseHandler<String> buildResponseHandler() {
